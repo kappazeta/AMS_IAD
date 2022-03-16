@@ -22,4 +22,4 @@ python pipeline.py --cfg config/train_0703.json --predict
 ```
 
 ## Reproducing results
-Basically, using config train_0703.json will give you the final results.
+Basically, using config `train_0703.json` will give you the final results.
