@@ -5,7 +5,7 @@ AMS: Ineligible Area Detection
 `cm_fit` conda environment is used.
 
 ## Dataset
-You can download data here: 
+You can download data here: https://drive.google.com/drive/folders/11KUJ0K6Pts02HGe2bqAjBhjFp8JuHVLQ?usp=sharing
 
 
 ## Training 
