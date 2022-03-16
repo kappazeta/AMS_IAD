@@ -1,0 +1,21 @@
+{
+    "experiment_name" : "unet_efficientnet_imagenet",
+    "version" : "v1",
+    "data": {
+        "path": "/gpfs/space/home/etais/hpc_shtym/PRIA_AMS/data/P1_data/kz"
+    },
+    
+    "train": {
+        "batch_size": 8,
+        "epochs": 300,
+        "learning_rate" : 1E-4,
+        "loss" : "dice_loss"
+    },
+
+    "model": {
+        "architecture":"Unet",
+        "backbone" : "efficientnetb3",
+        "n_classes" : 2
+    }
+
+}
