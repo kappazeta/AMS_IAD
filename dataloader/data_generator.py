@@ -8,6 +8,11 @@ import tensorflow as tf
 import keras
 import segmentation_models as sm
 
+try:
+    from keras.utils import Sequence
+except:
+    from keras.utils.all_utils import Sequence
+
 class Dataset:
     CLASSES  = ['background', 'road']
 
@@ -53,7 +58,7 @@ class Dataset:
     def __len__(self):
         return len(self.images_fp)
 
-class DataLoader(keras.utils.Sequence):
+class DataLoader(Sequence):
     def __init__(self, dataset, batch_size=1, shuffle=False):
         self.dataset = dataset
         self.batch_size = batch_size

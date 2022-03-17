@@ -2,10 +2,9 @@
 AMS: Ineligible Area Detection
 
 ## Requirements
-`cm_fit` conda environment is used.
-Also, segemntation_models library (https://segmentation-models.readthedocs.io/en/latest/install.html) is needed:
+Create the `ams_iad` conda environment:
 ```
-pip install segmentation-models
+conda env create -f environment.yml
 ```
 
 ## Dataset

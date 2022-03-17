@@ -7,6 +7,9 @@ import keras
 from dataloader.data_generator import Dataset, DataLoader
 from utils.data_utils import get_training_augmentation, get_validation_augmentation, get_preprocessing
 
+sm.set_framework('tf.keras')
+sm.framework()
+
 ARCH_MAP = {'Unet' : sm.Unet}
 
 def define_callbacks(CHECKPOINTS_PATH):
@@ -52,7 +55,7 @@ def train(config):
     model.summary()
     
     # define optimizer
-    opt = keras.optimizers.Adam(LR)
+    opt = tf.keras.optimizers.Adam(LR)
     loss = sm.losses.DiceLoss(class_weights=np.array([0.5, 1.0]))
 
     metrics = [sm.metrics.IOUScore(threshold=0.5),
