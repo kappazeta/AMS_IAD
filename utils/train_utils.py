@@ -4,8 +4,8 @@ import numpy as np
 import tensorflow as tf
 import segmentation_models as sm
 import keras
-from dataloader.data_generator import Dataset, DataLoader
-from utils.data_utils import get_training_augmentation, get_validation_augmentation, get_preprocessing
+from dataloader.data_generator import Dataset, Dataset2, DataLoader
+from utils.data_utils import get_training_augmentation, get_training_augmentation2, get_validation_augmentation, get_preprocessing
 
 sm.set_framework('tf.keras')
 sm.framework()
@@ -22,9 +22,7 @@ def define_callbacks(CHECKPOINTS_PATH):
 
 
 def train(config):
-    
     DATA_DIR = config['data']['path']
-    VAL_SPLIT = 0.1
 
     ARCH = config['model']['architecture']
     BACKBONE = config['model']['backbone']
@@ -38,20 +36,57 @@ def train(config):
 
     CHECKPOINTS_PATH = os.path.join('results', os.path.join(config['experiment_name'], 'Models'))
 
-    images = glob.glob(os.path.join(DATA_DIR, 'Images/*'))
-    masks = glob.glob(os.path.join(DATA_DIR, 'Masks/*'))
-    val_indices = np.random.choice(range(len(images)), int(len(images) * VAL_SPLIT), replace = False)
-    val_images = sorted(np.take(images, val_indices))
-    val_masks = sorted(np.take(masks, val_indices))
-    
-    train_images = sorted(list(set(images) - set(val_images)))
-    train_masks = sorted(list(set(masks) - set(val_masks)))
+    DATASTRUCT_VER = 1
+    if 'datastruct_version' in config['data']:
+        DATASTRUCT_VER = config['data']['datastruct_version']
+
+    FEATURES = ['B02', 'B03', 'B04']
+    if 'features' in config['data']:
+        FEATURES = config['data']['features']
+
+    print(DATASTRUCT_VER, FEATURES)
 
     preprocess_input = sm.get_preprocessing(BACKBONE)
+
+    if DATASTRUCT_VER == 1:
+        ENCODER_WEIGHTS = 'imagenet'
+        INPUT_SHAPE = None
+
+        VAL_SPLIT = 0.1
+        images = glob.glob(os.path.join(DATA_DIR, 'Images/*'))
+        masks = glob.glob(os.path.join(DATA_DIR, 'Masks/*'))
+        val_indices = np.random.choice(range(len(images)), int(len(images) * VAL_SPLIT), replace = False)
+        val_images = sorted(np.take(images, val_indices))
+        val_masks = sorted(np.take(masks, val_indices))
+        
+        train_images = sorted(list(set(images) - set(val_images)))
+        train_masks = sorted(list(set(masks) - set(val_masks)))
+
+        train_dataset = Dataset(train_images, train_masks, classes = CLASSES, augmentation = get_training_augmentation(), preprocessing = get_preprocessing(preprocess_input))
+        valid_dataset = Dataset(val_images, val_masks, classes = CLASSES, augmentation = get_validation_augmentation(), preprocessing = get_preprocessing(preprocess_input))
+
+        train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+        valid_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False)
+
+    elif DATASTRUCT_VER == 2:
+        ENCODER_WEIGHTS = None
+        INPUT_SHAPE = (None, None, len(FEATURES))
+
+        train_images = glob.glob(os.path.join(DATA_DIR, 'train/*'))
+        valid_images = glob.glob(os.path.join(DATA_DIR, 'val/*'))
+
+        train_dataset = Dataset2(train_images, FEATURES, classes=CLASSES, augmentation=get_training_augmentation2(), preprocessing=get_preprocessing(preprocess_input))
+        valid_dataset = Dataset2(valid_images, FEATURES, classes=CLASSES, augmentation=get_validation_augmentation(), preprocessing=get_preprocessing(preprocess_input))
+
+        train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+        valid_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False)
+    else:
+        raise ValueError("Unsupported data structure version {}".format(DATASTRUCT_VER))
+
     # define network parameters
 
-    #create model
-    model = ARCH_MAP[ARCH](BACKBONE, classes=N_CLASSES, activation='softmax', encoder_weights = 'imagenet')
+    # create model
+    model = ARCH_MAP[ARCH](BACKBONE, classes=N_CLASSES, activation='softmax', encoder_weights=ENCODER_WEIGHTS, input_shape=INPUT_SHAPE)
     model.summary()
     
     # define optimizer
@@ -62,12 +97,5 @@ def train(config):
     sm.metrics.FScore(threshold=0.5, class_weights = np.array([0.5, 1.0]))]
     model.compile(opt, loss, metrics)
 
-    train_dataset = Dataset(train_images, train_masks, classes = CLASSES, augmentation = get_training_augmentation(), preprocessing = get_preprocessing(preprocess_input))
-    valid_dataset = Dataset(val_images, val_masks, classes = CLASSES, augmentation = get_validation_augmentation(), preprocessing = get_preprocessing(preprocess_input))
-
-    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-    valid_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False)
-
-
-    history = model.fit_generator(train_dataloader, steps_per_epoch=len(train_dataloader),epochs=EPOCHS, callbacks = define_callbacks(CHECKPOINTS_PATH), validation_data=valid_dataloader, validation_steps=len(valid_dataloader))
+    history = model.fit_generator(train_dataloader, steps_per_epoch=len(train_dataloader),epochs=EPOCHS, callbacks=define_callbacks(CHECKPOINTS_PATH), validation_data=valid_dataloader, validation_steps=len(valid_dataloader))
 
