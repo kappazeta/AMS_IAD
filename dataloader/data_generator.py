@@ -71,7 +71,7 @@ class Dataset2:
         self.augmentation = augmentation
         self.preprocessing = preprocessing
 
-    def __getitem__(self, i):
+    def __getitem__(self, i, cloud_threshold=1E-3):
         # Read NetCDF file.
         img_root = NetCDFDataset(self.images_fp[i], "r")
 
@@ -83,7 +83,7 @@ class Dataset2:
             masks = [(b_label == v) for v in self.class_values]
             mask = np.stack(masks, axis=-1).astype('float32')
 
-        # Load features and perform data augmentation.
+        # Load features and stack them into a single tensor.
         bands = []
         for feature in self.features:
             b_image = img_root["/" + feature][:]
@@ -95,9 +95,20 @@ class Dataset2:
         img_root.close()
 
         image = np.stack(bands, axis=-1).astype('float32')
+
+        # Clear pixels on the mask which were cloudy on the image.
+        mask_pre = None
+        if mask is not None:
+            mask_pre = mask.copy()
+            mask_mask = image[:, :, 0] < cloud_threshold 
+            mask[mask_mask] = 0
+
+        # Perform data augmentation on the image.
         if self.augmentation:
             sample = self.augmentation(image=image, mask=mask)
             image, mask = sample['image'], sample['mask']
+
+        # Clip pixel values.
         if self.preprocessing:
             image = self.preprocessing(image=image)['image']
 
