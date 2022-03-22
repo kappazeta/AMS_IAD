@@ -18,6 +18,7 @@ def parse_opt():
     parser.add_argument('--cfg', type = str, default = '', help = 'config.json path')
     parser.add_argument('--predict', dest='predict', action='store_true')
     parser.add_argument('--train', dest='train', action='store_true')
+    parser.add_argument('--resume', dest='resume', action='store_true')
     args = parser.parse_args()
     return args
 
@@ -26,7 +27,7 @@ def main(opt):
     config = parse_config(opt.cfg)
 
     if opt.train:
-        train(config)
+        train(config, resume_training=opt.resume)
 
     if opt.predict:
         predict(config)

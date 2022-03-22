@@ -82,12 +82,30 @@ def get_training_augmentation2():
     return A.Compose(train_transform)
 
 
+def get_training_augmentation3():
+    train_transform = [
+        A.HorizontalFlip(p=0.5),
+
+        A.Lambda(mask=round_clip_0_1)
+    ]
+    return A.Compose(train_transform)
+
+
 def get_validation_augmentation():
     """Add paddings to make image shape divisible by 32"""
     test_transform = [
         A.PadIfNeeded(384, 480)
     ]
     return A.Compose(test_transform)
+
+
+def get_validation_augmentation2():
+    """Add paddings to make image shape divisible by 32"""
+    test_transform = [
+        A.Lambda(mask=round_clip_0_1)
+    ]
+    return A.Compose(test_transform)
+
 
 def get_preprocessing(preprocessing_fn):
     """Construct preprocessing transform
@@ -116,7 +134,13 @@ def visualize(**images):
         plt.xticks([])
         plt.yticks([])
         plt.title(' '.join(name.split('_')).title())
-        plt.imshow(image)
+
+        img = image.copy()
+        if len(img.shape) == 3 and img.shape[-1] > 3:
+            img = img[:, :, :3]
+        if np.issubdtype(img.dtype, np.floating):
+            img = (img * 255).astype('uint8')
+        plt.imshow(img)
     return fig
 
 # helper function for data visualization    
