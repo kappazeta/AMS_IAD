@@ -138,8 +138,9 @@ def visualize(**images):
         img = image.copy()
         if len(img.shape) == 3 and img.shape[-1] > 3:
             img = img[:, :, :3]
-        if np.issubdtype(img.dtype, np.floating):
-            img = (img * 255).astype('uint8')
+        img[img < 0] = 0
+        img[img > 1] = 1
+
         plt.imshow(img)
     return fig
 

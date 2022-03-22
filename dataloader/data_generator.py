@@ -62,14 +62,13 @@ class Dataset:
 class Dataset2:
     CLASSES  = ['background', 'road']
 
-    def __init__(self, images_fp, features, classes=None, augmentation=None, preprocessing=None):
+    def __init__(self, images_fp, features, classes=None, augmentation=None):
         self.images_fp = images_fp
         self.features = features
 
         self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
 
         self.augmentation = augmentation
-        self.preprocessing = preprocessing
 
     def __getitem__(self, i, cloud_threshold=1E-3):
         # Read NetCDF file.
@@ -107,10 +106,6 @@ class Dataset2:
         if self.augmentation:
             sample = self.augmentation(image=image, mask=mask)
             image, mask = sample['image'], sample['mask']
-
-        # Clip pixel values.
-        if self.preprocessing:
-            image = self.preprocessing(image=image)['image']
 
         if mask is not None:
             return image, mask

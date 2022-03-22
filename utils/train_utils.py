@@ -51,8 +51,6 @@ def train(config, resume_training=False):
     if 'augmentation' in config['data']:
         DATA_AUGMENTATION = config['data']['augmentation']
 
-    preprocess_input = sm.get_preprocessing(BACKBONE)
-
     if DATASTRUCT_VER == 1:
         ENCODER_WEIGHTS = 'imagenet'
         INPUT_SHAPE = None
@@ -67,6 +65,8 @@ def train(config, resume_training=False):
         train_images = sorted(list(set(images) - set(val_images)))
         train_masks = sorted(list(set(masks) - set(val_masks)))
 
+        preprocess_input = sm.get_preprocessing(BACKBONE)
+
         train_dataset = Dataset(train_images, train_masks, classes=CLASSES, augmentation=du.get_training_augmentation(), preprocessing=du.get_preprocessing(preprocess_input))
         valid_dataset = Dataset(val_images, val_masks, classes=CLASSES, augmentation=du.get_validation_augmentation(), preprocessing=du.get_preprocessing(preprocess_input))
 
@@ -76,6 +76,7 @@ def train(config, resume_training=False):
     elif DATASTRUCT_VER == 2:
         ENCODER_WEIGHTS = None
         INPUT_SHAPE = (None, None, len(FEATURES))
+        PREPROCESSING = 0
 
         if DATA_AUGMENTATION == 1:
             train_aug = du.get_training_augmentation2()
@@ -84,11 +85,13 @@ def train(config, resume_training=False):
         else:
             raise ValueError("Unsupported data augmentation: {}".format(DATA_AUGMENTATION))
 
+        print("Using data augmentation {} without preprocessing".format(DATA_AUGMENTATION))
+
         train_images = glob.glob(os.path.join(DATA_DIR, 'train/*'))
         valid_images = glob.glob(os.path.join(DATA_DIR, 'val/*'))
 
-        train_dataset = Dataset2(train_images, FEATURES, classes=CLASSES, augmentation=train_aug, preprocessing=du.get_preprocessing(preprocess_input))
-        valid_dataset = Dataset2(valid_images, FEATURES, classes=CLASSES, augmentation=du.get_validation_augmentation2(), preprocessing=du.get_preprocessing(preprocess_input))
+        train_dataset = Dataset2(train_images, FEATURES, classes=CLASSES, augmentation=train_aug)
+        valid_dataset = Dataset2(valid_images, FEATURES, classes=CLASSES, augmentation=du.get_validation_augmentation2())
 
         train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
         valid_dataloader = DataLoader(valid_dataset, batch_size=1, shuffle=False)

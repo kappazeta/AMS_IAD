@@ -37,14 +37,14 @@ def predict(config):
     if 'features' in config['data']:
         FEATURES = config['data']['features']
 
-    preprocess_input = sm.get_preprocessing(BACKBONE)
-
     if DATASTRUCT_VER == 1:
         ENCODER_WEIGHTS = 'imagenet'
         INPUT_SHAPE = None
 
         test_images = sorted(glob.glob(os.path.join(TEST_DATA_DIR, "Images/*")))[-200:]
         test_masks = sorted(glob.glob(os.path.join(TEST_DATA_DIR, "Masks/*")))[-200:]
+
+        preprocess_input = sm.get_preprocessing(BACKBONE)
 
         test_dataset = Dataset(test_images, test_masks, classes=CLASSES, preprocessing=du.get_preprocessing(preprocess_input))
         test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
@@ -53,7 +53,7 @@ def predict(config):
         INPUT_SHAPE = (None, None, len(FEATURES))
 
         test_images = glob.glob(os.path.join(DATA_DIR, 'test/*'))
-        test_dataset = Dataset2(test_images, FEATURES, classes=CLASSES, preprocessing=du.get_preprocessing(preprocess_input))
+        test_dataset = Dataset2(test_images, FEATURES, classes=CLASSES)
         test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=True)
     else:
         raise ValueError("Unsupported data structure version {}".format(DATASTRUCT_VER))
@@ -61,7 +61,6 @@ def predict(config):
     # create model
     model = ARCH_MAP[ARCH](BACKBONE, classes=N_CLASSES, activation='softmax', encoder_weights=ENCODER_WEIGHTS, input_shape=INPUT_SHAPE)
     model.load_weights(BEST_MODEL_PATH) 
-    # model.summary()
     
     # define optimizer
     optim = tf.keras.optimizers.Adam(LR)
