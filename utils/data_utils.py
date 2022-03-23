@@ -51,7 +51,8 @@ def get_training_augmentation2():
 
         A.HorizontalFlip(p=0.5),
 
-        A.ShiftScaleRotate(scale_limit=0.5, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
+        # NOTE:: Removed scale to overcome blurring.
+        A.ShiftScaleRotate(scale_limit=0, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
 
         A.PadIfNeeded(min_height=320, min_width=320, always_apply=True, border_mode=0),
         A.RandomCrop(height=256, width=256, always_apply=True),
@@ -65,15 +66,7 @@ def get_training_augmentation2():
             p=0.9,
         ),
 
-        A.OneOf(
-            [
-                A.IAASharpen(p=1),
-                A.Blur(blur_limit=3, p=1),
-                A.MotionBlur(blur_limit=3, p=1),
-            ],
-            p=0.9,
-        ),
-
+        # NOTE:: Removed IAASharpen, Blur, MotionBlur
         # NOTE:: Removed HueSaturationValue because it only supports RGB rasters.
         A.RandomContrast(p=0.9),
 

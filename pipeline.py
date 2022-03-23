@@ -1,18 +1,7 @@
-import os
-import glob
-import cv2
 import argparse
-import numpy as np 
-import pandas as pd
-import tensorflow as tf
-import keras
-import segmentation_models as sm
 
-# data utils import
 from utils.utils import parse_config
-from utils.train_utils import train
-from utils.eval_utils import evaluate
-from utils.predict_utils import predict
+
 
 def parse_opt():
     parser = argparse.ArgumentParser(description = 'Run P2')
@@ -21,19 +10,27 @@ def parse_opt():
     parser.add_argument('--train', dest='train', action='store_true')
     parser.add_argument('--resume', dest='resume', action='store_true')
     parser.add_argument('--evaluate', dest='evaluate', action='store_true')
+    parser.add_argument('--mosaick', dest='mosaick', action='store_true')
     args = parser.parse_args()
     return args
 
+
 def main(opt):
-    
     config = parse_config(opt.cfg)
 
     if opt.train:
+        from utils.train_utils import train
         train(config, resume_training=opt.resume)
     if opt.evaluate:
+        from utils.eval_utils import evaluate
         evaluate(config)
     if opt.predict:
+        from utils.predict_utils import predict
         predict(config)
+    if opt.mosaick:
+        from utils.raster_mosaic import mosaick
+        mosaick(config)
+
 
 if __name__ == '__main__':
     opt = parse_opt()

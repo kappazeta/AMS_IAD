@@ -84,17 +84,17 @@ def predict(config):
     for i in range(0, len(pred_dataset), BATCH_SIZE):
         print("{} / {}".format(i, len(pred_dataset)))
 
-        images = [None]*BATCH_SIZE
-        for j in range(BATCH_SIZE):
+        num_subtiles = min(BATCH_SIZE, len(pred_dataset) - i)
+        images = [None]*num_subtiles
+        for j in range(num_subtiles):
             images[j], _ = pred_dataset[i + j]
         images = np.stack(images)
         # Stack into batches.
-        pr_masks = model.predict(images).round().astype('uint8')
+        pr_masks = (model.predict(images).round() * 255).astype('uint8')
 
         # TODO:: Raw predictions into files.
     
-        for j in range(BATCH_SIZE):
+        for j in range(num_subtiles):
             fname = Path(pred_images[i + j]).stem
             cv2.imwrite('predictions/pred_{}_{}.tif'.format(i + j, fname), pr_masks[j, :, :, 1])
-        break
 

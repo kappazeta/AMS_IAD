@@ -1,2 +1,6 @@
 **/__pycache__/
 **/*.swp
+*.png
+*.tif
+*.json
+*.h5
