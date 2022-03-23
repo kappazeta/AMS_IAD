@@ -11,6 +11,7 @@ import segmentation_models as sm
 # data utils import
 from utils.utils import parse_config
 from utils.train_utils import train
+from utils.eval_utils import evaluate
 from utils.predict_utils import predict
 
 def parse_opt():
@@ -19,6 +20,7 @@ def parse_opt():
     parser.add_argument('--predict', dest='predict', action='store_true')
     parser.add_argument('--train', dest='train', action='store_true')
     parser.add_argument('--resume', dest='resume', action='store_true')
+    parser.add_argument('--evaluate', dest='evaluate', action='store_true')
     args = parser.parse_args()
     return args
 
@@ -28,7 +30,8 @@ def main(opt):
 
     if opt.train:
         train(config, resume_training=opt.resume)
-
+    if opt.evaluate:
+        evaluate(config)
     if opt.predict:
         predict(config)
 
