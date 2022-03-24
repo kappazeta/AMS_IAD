@@ -78,8 +78,6 @@ def predict(config):
     # compile keras model with defined optimozer, loss and metrics
     model.compile(optim, dice_loss, metrics)
 
-    os.makedirs("predictions", exist_ok=True)
-
     # Predict
     for i in range(0, len(pred_dataset), BATCH_SIZE):
         print("{} / {}".format(i, len(pred_dataset)))
@@ -95,6 +93,9 @@ def predict(config):
         # TODO:: Raw predictions into files.
     
         for j in range(num_subtiles):
-            fname = Path(pred_images[i + j]).stem
-            cv2.imwrite('predictions/pred_{}_{}.tif'.format(i + j, fname), pr_masks[j, :, :, 1])
+            fpath = Path(pred_images[i + j])
+            fname = fpath.stem
+            product = fpath.parts[-3]
+            os.makedirs(os.path.join("predictions", product), exist_ok=True)
+            cv2.imwrite(os.path.join("predictions", product, fname + '.tif'), pr_masks[j, :, :, 1])
 

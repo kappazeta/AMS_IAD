@@ -85,7 +85,7 @@ def evaluate(config):
         print("mean {}: {:.5}".format(metric.__name__, value))
 
     ### plot ###
-    n = 5
+    n = 10
     ids = np.random.choice(np.arange(len(pred_dataset)), size=n)
     ids = ids.tolist()
     

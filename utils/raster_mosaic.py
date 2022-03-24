@@ -51,9 +51,11 @@ def image_grid(image_list, rows, cols, img_fmt="RGB"):
     return new_img
 
 
-def image_grid_overlap(image_list, rows, cols, crop, img_fmt="RGB"):
+def image_grid_overlap(image_list, rows, cols, crop_total, img_fmt="RGB"):
     w, h = Image.open(image_list[0]).size
-    new_img = Image.new(img_fmt, size=(cols * (w - crop * 2), rows * (h - crop * 2)))
+    crop_total = int(crop_total * w)
+    new_img = Image.new(img_fmt, size=(cols * (w - crop_total), rows * (h - crop_total)))
+    crop = int(crop_total / 2)
 
     # Creates new empty image with taking the size from sub-tile from the list
     for img in image_list:
@@ -123,34 +125,39 @@ def image_grid_overlap(image_list, rows, cols, crop, img_fmt="RGB"):
 
 
 def parse_pred_path(path):
-    m = re.search(r"pred_\d+_(T[\dA-Z]+_\d+T\d+)_tile_(\d+)_(\d+)", str(path))
+    m = re.search(r"(T[\dA-Z]+_\d+T\d+)_tile_(\d+)_(\d+)\.tif", str(path))
     if m:
         return m.group(1), int(m.group(2)), int(m.group(3))
     return None, None, None
 
 
-def mosaick(config, crop=32):
+def mosaick(config, crop=0.125):
+    if 'overlap' in config['data']:
+        overlap = config['data']['overlap']
+
     products = {}
-    for subtile in os.listdir('predictions'):
-        product, x, y = parse_pred_path(subtile)
-        if product is None:
-            continue
+    for product in os.listdir("predictions"):
+        path_product = os.path.join("predictions", product)
+        if os.path.isdir(path_product):
+            for subtile in os.listdir(path_product):
+                path_subtile = os.path.join('predictions', product, subtile)
+                _, x, y = parse_pred_path(subtile)
+                if None in [x, y]:
+                    continue
 
-        path_subtile = os.path.join('predictions', subtile)
-
-        if product not in products:
-            products[product] = [x, y, [path_subtile]]
-        else:
-            x_max = products[product][0]
-            y_max = products[product][1]
-            subtile_paths = products[product][2] + [path_subtile]
-            products[product] = [max(x, x_max), max(y, y_max), subtile_paths]
+                if product not in products:
+                    products[product] = [x, y, [path_subtile]]
+                else:
+                    x_max = products[product][0]
+                    y_max = products[product][1]
+                    subtile_paths = products[product][2] + [path_subtile]
+                    products[product] = [max(x, x_max), max(y, y_max), subtile_paths]
 
     for product in products.keys():
-        w = products[product][0]
-        h = products[product][1]
+        w = products[product][0] + 1
+        h = products[product][1] + 1
         path_subtiles = products[product][2]
 
-        print(product, products[product][0], products[product][1])
         img = image_grid_overlap(path_subtiles, h, w, crop, img_fmt="1")
         img.save("predictions/{}.tif".format(product), compression="packbits")
+
