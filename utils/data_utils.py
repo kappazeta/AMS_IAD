@@ -46,12 +46,59 @@ def get_training_augmentation():
     return A.Compose(train_transform)
 
 
+def get_training_augmentation2():
+    train_transform = [
+
+        A.HorizontalFlip(p=0.5),
+
+        # NOTE:: Removed scale to overcome blurring.
+        A.ShiftScaleRotate(scale_limit=0, rotate_limit=0, shift_limit=0.1, p=1, border_mode=0),
+
+        A.PadIfNeeded(min_height=320, min_width=320, always_apply=True, border_mode=0),
+        A.RandomCrop(height=256, width=256, always_apply=True),
+
+        A.OneOf(
+            [
+                # NOTE:: Removed CLAHE because it only supports uint8 rasters.
+                A.RandomBrightness(p=1),
+                A.RandomGamma(p=1),
+            ],
+            p=0.9,
+        ),
+
+        # NOTE:: Removed IAASharpen, Blur, MotionBlur
+        # NOTE:: Removed HueSaturationValue because it only supports RGB rasters.
+        A.RandomContrast(p=0.9),
+
+        A.Lambda(mask=round_clip_0_1)
+    ]
+    return A.Compose(train_transform)
+
+
+def get_training_augmentation3():
+    train_transform = [
+        A.HorizontalFlip(p=0.5),
+
+        A.Lambda(mask=round_clip_0_1)
+    ]
+    return A.Compose(train_transform)
+
+
 def get_validation_augmentation():
     """Add paddings to make image shape divisible by 32"""
     test_transform = [
         A.PadIfNeeded(384, 480)
     ]
     return A.Compose(test_transform)
+
+
+def get_validation_augmentation2():
+    """Add paddings to make image shape divisible by 32"""
+    test_transform = [
+        A.Lambda(mask=round_clip_0_1)
+    ]
+    return A.Compose(test_transform)
+
 
 def get_preprocessing(preprocessing_fn):
     """Construct preprocessing transform
@@ -80,7 +127,14 @@ def visualize(**images):
         plt.xticks([])
         plt.yticks([])
         plt.title(' '.join(name.split('_')).title())
-        plt.imshow(image)
+
+        img = image.copy()
+        if len(img.shape) == 3 and img.shape[-1] > 3:
+            img = img[:, :, :3]
+        img[img < 0] = 0
+        img[img > 1] = 1
+
+        plt.imshow(img)
     return fig
 
 # helper function for data visualization    

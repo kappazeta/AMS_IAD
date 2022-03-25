@@ -1,5 +1,4 @@
 import os
-import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
@@ -16,7 +15,7 @@ sm.framework()
 ARCH_MAP = {'Unet' : sm.Unet}
 
 
-def predict(config):
+def evaluate(config):
     DATA_DIR = config['data']['path']
     TEST_DATA_DIR = os.path.join(DATA_DIR, 'test')
     PRED_DATA_DIR = os.path.join(DATA_DIR, 'pred')
@@ -59,9 +58,9 @@ def predict(config):
         ENCODER_WEIGHTS = None
         INPUT_SHAPE = (None, None, len(FEATURES))
 
-        pred_images = glob.glob(os.path.join(DATA_DIR, 'pred/*/*/*'))
+        pred_images = glob.glob(os.path.join(DATA_DIR, 'test/*'))
         pred_dataset = Dataset2(pred_images, FEATURES, classes=CLASSES)
-        pred_dataloader = DataLoader(pred_dataset, batch_size=BATCH_SIZE, shuffle=False)
+        pred_dataloader = DataLoader(pred_dataset, batch_size=BATCH_SIZE, shuffle=True)
     else:
         raise ValueError("Unsupported data structure version {}".format(DATASTRUCT_VER))
 
@@ -78,24 +77,24 @@ def predict(config):
     # compile keras model with defined optimozer, loss and metrics
     model.compile(optim, dice_loss, metrics)
 
-    # Predict
-    for i in range(0, len(pred_dataset), BATCH_SIZE):
-        print("{} / {}".format(i, len(pred_dataset)))
+    # Evaluate model results.
+    scores = model.evaluate_generator(pred_dataloader)
 
-        num_subtiles = min(BATCH_SIZE, len(pred_dataset) - i)
-        images = [None]*num_subtiles
-        for j in range(num_subtiles):
-            images[j], _ = pred_dataset[i + j]
-        images = np.stack(images)
-        # Stack into batches.
-        pr_masks = (model.predict(images).round() * 255).astype('uint8')
+    print("Loss: {:.5}".format(scores[0]))
+    for metric, value in zip(metrics, scores[1:]):
+        print("mean {}: {:.5}".format(metric.__name__, value))
 
-        # TODO:: Raw predictions into files.
+    ### plot ###
+    n = 10
+    ids = np.random.choice(np.arange(len(pred_dataset)), size=n)
+    ids = ids.tolist()
     
-        for j in range(num_subtiles):
-            fpath = Path(pred_images[i + j])
-            fname = fpath.stem
-            product = fpath.parts[-3]
-            os.makedirs(os.path.join("predictions", product), exist_ok=True)
-            cv2.imwrite(os.path.join("predictions", product, fname + '.tif'), pr_masks[j, :, :, 1])
+    for i in ids:
+        image, gt_mask = pred_dataset[i]
+        image = np.expand_dims(image, axis=0)
+        pr_mask = model.predict(image).round()
+        fig = du.visualize(image=du.denormalize(image.squeeze()), gt_mask=gt_mask[..., 0].squeeze(), pr_mask=pr_mask[..., 0].squeeze())
+    
+        fname = Path(pred_images[i]).stem
+        plt.savefig('predicted_examples/pred_{}_{}.png'.format(i, fname), bbox_inches='tight')
 
